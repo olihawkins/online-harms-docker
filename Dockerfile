@@ -12,13 +12,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # copy the content of the local src directory to the working directory
 COPY classifiers ./classifiers
-COPY tmp ./tmp
 COPY docker.py .
 COPY download.py .
 
 # install nltk datasets
 RUN python download.py
 
+# Create a tmp directory
+RUN mkdir tmp
 ENV TMPDIR /app/tmp
 
 # command to run on container start
