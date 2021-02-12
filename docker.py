@@ -22,12 +22,15 @@
 #===========================#
 
 import datetime
-import subprocess
+import nltk
+import numpy as np
 import os
 import pandas as pd
-import nltk
+import subprocess
+import sys
 import time
 nltk.download('all')
+
 
 #===========================#
 #        Variables          #
@@ -46,14 +49,17 @@ DATASETS = [
     'wulcyzn', 
     'zampieri']
 
-all_results_path = 'results/'
+PREDICTION_MODE_BINARY = 'binary'
+PREDICTION_MODE_PROBABILITY = 'probability'
+
+ALL_RESULTS_PATH = 'results/'
 pd.set_option('display.max_rows', 500)
 
 #===========================#
 #        Functions          #
 #===========================#
 
-def generate_reports(file):
+def generate_reports(file, prediction_mode):
     """
     Generates a report for each trained model.
     """
@@ -100,11 +106,13 @@ def generate_reports(file):
                 # Set the process (train or test)
                 '--test-path', str('dataset/') + file,
                 # Set the path of the export model
-                '--export-results-path', results_path,                      
+                '--export-results-path', results_path,
+                # Sets the prediction mode of the classifier
+                '--prediction-mode', prediction_mode,
             ])
 
 
-def generate_voting_ensemble(file):
+def generate_voting_ensemble(file, prediction_mode):
     """
     Simulates a voting ensemble based on all the results.
     """
@@ -114,24 +122,32 @@ def generate_voting_ensemble(file):
     file_name = str(file).split('.')[0]  # Get file name
 
     # Get all files in the directory
-    results = [f for f in os.listdir(all_results_path) if not f.startswith('.')]
+    results = [f for f in os.listdir(ALL_RESULTS_PATH) if not f.startswith('.')]
 
     # Combine all results into one dataframe
     list_of_frames = []
     for filename in results:
-        df = pd.read_csv(all_results_path + filename, index_col=None, header=0)
+        df = pd.read_csv(ALL_RESULTS_PATH + filename, index_col=None, header=0)
         list_of_frames.append(df.iloc[:, 1:2]) # Get results column
     
     all_results_df = pd.concat(list_of_frames, axis=1, ignore_index=True)
-    all_results_df['text'] = pd.read_csv(all_results_path + results[0])['text']
+    all_results_df['text'] = pd.read_csv(ALL_RESULTS_PATH + results[0])['text']
     
-    all_results_df['label'] = all_results_df.apply(
-        lambda row: int(row.mode()[0]), axis=1)
+    if prediction_mode == PREDICTION_MODE_BINARY:
+
+        all_results_df['label'] = all_results_df.apply(
+            lambda row: int(row.mode()[0]), axis=1)
     
+    elif prediction_mode == PREDICTION_MODE_PROBABILITY:
+        
+        numeric_results_df = all_results_df.select_dtypes(include=[np.number])
+        all_results_df['label'] = numeric_results_df.apply(
+            lambda row: row.mean(), axis=1) 
+
     ensemble_df = all_results_df[['text', 'label']]
     
     ensemble_df.to_csv(
-        all_results_path + 'ensemble_report' + file_name + '.csv', 
+        ALL_RESULTS_PATH + 'ensemble_report' + '_' + file_name + '.csv', 
         index=False)
 
 
@@ -140,6 +156,12 @@ def generate_voting_ensemble(file):
 #===========================#
 
 if __name__ == "__main__":
+
+    # Set prediction mode
+    prediction_mode = PREDICTION_MODE_BINARY
+
+    if len(sys.argv) > 1 and sys.argv[1] == '-p':
+        prediction_mode = PREDICTION_MODE_PROBABILITY
 
     # Start timer
     start = datetime.datetime.now()
@@ -151,8 +173,8 @@ if __name__ == "__main__":
 
     for file in files:
         print('===> File to be labelled: ' + str(file))
-        generate_reports(file)
-        generate_voting_ensemble(file)
+        generate_reports(file, prediction_mode)
+        generate_voting_ensemble(file, prediction_mode)
 
     print('Reporting complete: Results can be found in folder `results`')
 

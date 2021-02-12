@@ -10,6 +10,7 @@ Options:
     --classifier-name=<str>                     name of classifier
     --model-path=<file>                         training model file
     --export-results-path=<file>                testing report file
+    --prediction-mode=<str>                     prediction mode
 """
 
 #===========================#
@@ -35,6 +36,9 @@ import numpy as np
 #===========================#
 #        Variables          #
 #===========================#
+
+PREDICTION_MODE_BINARY = 'binary'
+PREDICTION_MODE_PROBABILITY = 'probability'
 
 # This is to fix the error: 
 # `RecursionError: maximum recursion depth exceeded in comparison`
@@ -156,7 +160,13 @@ def test(args):
     loaded_model = joblib.load(args['--model-path'])
 
     # Predict
-    y_preds = loaded_model.predict(test_df.text)
+    prediction_mode = args['--prediction-mode']
+    
+    if prediction_mode  == PREDICTION_MODE_BINARY:
+        y_preds = loaded_model.predict(test_df.text)
+
+    elif prediction_mode == PREDICTION_MODE_PROBABILITY:
+        y_preds = loaded_model.predict_proba(test_df.text)[:,1]
 
     # Concat the results and save the file
     results_df = pd.concat([test_df, pd.DataFrame(y_preds)], axis=1)

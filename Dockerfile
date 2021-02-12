@@ -23,4 +23,4 @@ RUN mkdir tmp
 ENV TMPDIR /app/tmp
 
 # command to run on container start
-CMD [ "python", "./docker.py" ]
+ENTRYPOINT [ "python", "./docker.py" ]

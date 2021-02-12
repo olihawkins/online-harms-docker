@@ -10,6 +10,7 @@ Options:
     --classifier-name=<str>                     name of classifier
     --model-path=<file>                         training model file
     --export-results-path=<file>                testing report file
+    --prediction-mode=<str>                     prediction mode
 """
 
 #===========================#
@@ -41,6 +42,9 @@ import pickle
 #===========================#
 #        Variables          #
 #===========================#
+
+PREDICTION_MODE_BINARY = 'binary'
+PREDICTION_MODE_PROBABILITY = 'probability'
 
 stopwords = nltk.corpus.stopwords.words("english")
 
@@ -369,7 +373,13 @@ def test(args):
     X = pd.DataFrame(M)
 
     # Predict
-    y_preds = loaded_model.predict(X)
+    prediction_mode = args['--prediction-mode']
+    
+    if prediction_mode  == PREDICTION_MODE_BINARY:
+        y_preds = loaded_model.predict(X)
+    
+    elif prediction_mode == PREDICTION_MODE_PROBABILITY:
+        y_preds = loaded_model.predict_proba(X)[:,1]
 
     # Concat the results and save the file
     results_df = pd.concat([test_df, pd.DataFrame(y_preds)], axis=1)

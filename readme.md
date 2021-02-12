@@ -25,3 +25,13 @@ docker run \
     online-harms
 ```
 
+By default the tool predicts binary classes for each of the input texts, with 0 indicating unharmful text and 1 indicating harmful text. The ensemble prediction represents the mode of the predictions from each of the different classifiers. 
+
+You can instead have the classifiers predict the probability that the text is harmful with the `-p` argument. In this case the ensemble prediction represents the mean of the predictions from each of the different classifiers.
+
+```
+docker run \
+    -v ${PWD}/dataset:/app/dataset \
+    -v ${PWD}/results:/app/results \
+    online-harms -p
+```
