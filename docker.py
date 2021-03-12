@@ -120,6 +120,11 @@ def generate_voting_ensemble(file, prediction_mode):
     print('-----> Generating voting ensemble report...')
 
     file_name = str(file).split('.')[0]  # Get file name
+    file_path = ALL_RESULTS_PATH + 'ensemble_report' + '_' + file_name + '.csv'
+
+    # Delete a previous ensemble file if it already exists 
+    if os.path.isfile(file_path):
+        os.remove(file_path)
 
     # Get all files in the directory
     results = [f for f in os.listdir(ALL_RESULTS_PATH) if not f.startswith('.')]
@@ -128,10 +133,9 @@ def generate_voting_ensemble(file, prediction_mode):
     list_of_frames = []
     for filename in results:
         df = pd.read_csv(ALL_RESULTS_PATH + filename, index_col=None, header=0)
-        list_of_frames.append(df.iloc[:, 1:2]) # Get results column
+        list_of_frames.append(df.iloc[:, 2:3]) # Get results column
     
     all_results_df = pd.concat(list_of_frames, axis=1, ignore_index=True)
-    all_results_df['text'] = pd.read_csv(ALL_RESULTS_PATH + results[0])['text']
     
     if prediction_mode == PREDICTION_MODE_BINARY:
 
@@ -140,15 +144,14 @@ def generate_voting_ensemble(file, prediction_mode):
     
     elif prediction_mode == PREDICTION_MODE_PROBABILITY:
         
-        numeric_results_df = all_results_df.select_dtypes(include=[np.number])
-        all_results_df['label'] = numeric_results_df.apply(
+        all_results_df['label'] = all_results_df.apply(
             lambda row: row.mean(), axis=1) 
 
-    ensemble_df = all_results_df[['text', 'label']]
-    
-    ensemble_df.to_csv(
-        ALL_RESULTS_PATH + 'ensemble_report' + '_' + file_name + '.csv', 
-        index=False)
+    all_results_df['id'] = pd.read_csv(ALL_RESULTS_PATH + results[0])['id']
+    all_results_df['text'] = pd.read_csv(ALL_RESULTS_PATH + results[0])['text']
+
+    ensemble_df = all_results_df[['id', 'text', 'label']]
+    ensemble_df.to_csv(file_path, index=False)
 
 
 #===========================#

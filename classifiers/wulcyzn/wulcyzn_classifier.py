@@ -170,7 +170,7 @@ def test(args):
 
     # Concat the results and save the file
     results_df = pd.concat([test_df, pd.DataFrame(y_preds)], axis=1)
-    results_df.columns = ['text', 'label']
+    results_df.columns = ['id', 'text', 'label']
     results_df.to_csv(args['--export-results-path'], index=False)
 
 
